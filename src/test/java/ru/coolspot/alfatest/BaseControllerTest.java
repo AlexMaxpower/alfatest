@@ -22,6 +22,7 @@ import ru.coolspot.alfatest.exceptions.ExternalDataErrorException;
 import ru.coolspot.alfatest.exceptions.NotFoundException;
 import ru.coolspot.alfatest.exceptions.ValidationException;
 import ru.coolspot.alfatest.model.ExchangeRates;
+import ru.coolspot.alfatest.utils.Utils;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -147,5 +148,28 @@ public class BaseControllerTest {
                 .andExpect(result -> assertEquals("External data error at Giphy",
                         result.getResolvedException().getMessage()))
                 .andExpect(status().isBadGateway());
+    }
+
+    @Test
+    void shouldReturnUrlGifIncreaseWhenTagIsUp() {
+        assertEquals("https://i.giphy.com/media/wdUYfojBtiosK9UMCY/giphy.gif",
+                Utils.getUrlGif(giphyMapUp), "Должен быть Url для GIF с тегом rich");
+    }
+
+    @Test
+    void shouldReturnUrlGifNoChangedWhenTagIsDown() {
+        assertEquals("https://i.giphy.com/media/l2Sq8EYhA66vdOfAI/giphy.gif",
+                Utils.getUrlGif(giphyMapDown), "Должен быть Url для GIF с тегом broke");
+    }
+
+    @Test
+    void shouldThrowExceptionWhenGiphyMapNull() {
+        assertThrows(ExternalDataErrorException.class, () -> Utils.getUrlGif(null));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenGiphyMapDataIsEmpty() {
+        giphyMapDown.get("data").put("id", "");
+        assertThrows(ExternalDataErrorException.class, () -> Utils.getUrlGif(giphyMapDown));
     }
 }
