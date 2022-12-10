@@ -9,6 +9,8 @@ import ru.coolspot.alfatest.exceptions.NotFoundException;
 import ru.coolspot.alfatest.model.ExchangeRates;
 
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -16,13 +18,24 @@ public class Service {
 
     @Autowired
     private Exchanger exchanger;
+    private Map<LocalDate,ExchangeRates> cache = new HashMap<>();
 
     public Boolean isRateIncreased(String currencyCode) {
         Boolean result;
 
         ExchangeRates exchangeRatesLatest = exchanger.getLatest();
         LocalDate date = LocalDate.now().minusDays(1);
-        ExchangeRates exchangeRatesYesterday = exchanger.getHistorical(date.toString());
+        ExchangeRates exchangeRatesYesterday;
+
+        if (cache.containsKey(date)) {
+            exchangeRatesYesterday = cache.get(date);
+            log.info("Взяли данные за вчерашний день из кеша");
+        } else {
+            exchangeRatesYesterday = exchanger.getHistorical(date.toString());
+            cache.put(date, exchangeRatesYesterday);
+            log.info("Получили данные за вчерашний день от внешнего сервиса");
+        }
+
 
         if ((exchangeRatesLatest == null) || (exchangeRatesYesterday == null)) {
             throw new ExternalDataErrorException("External data error at Exchanger");
