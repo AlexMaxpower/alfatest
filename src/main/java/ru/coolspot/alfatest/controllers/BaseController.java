@@ -1,17 +1,21 @@
 package ru.coolspot.alfatest.controllers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import org.apache.commons.io.IOUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import ru.coolspot.alfatest.clients.Giphy;
 import ru.coolspot.alfatest.exceptions.ValidationException;
 import ru.coolspot.alfatest.services.Service;
 import ru.coolspot.alfatest.utils.Utils;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -26,8 +30,6 @@ public class BaseController {
     @Autowired
     private Service service;
 
-    @Value("${nochangeimage.url}")
-    private String noChange;
     public String imageUrl;
     @Value("${uptag}")
     private String upTag;
@@ -35,6 +37,15 @@ public class BaseController {
     private String downTag;
     @Value("${base}")
     private String baseCurrency;
+
+    @Value("${nochange.image}")
+    private String noChangeImage;
+
+    @Value("${up.image}")
+    private String upImage;
+
+    @Value("${down.image}")
+    private String downImage;
 
     @GetMapping(
             value = "/{currencyCode}",
@@ -47,15 +58,37 @@ public class BaseController {
         }
         currencyCode = currencyCode.toUpperCase();
         log.info("Base currency = {}", baseCurrency);
+
         Boolean rateIncreased = service.isRateIncreased(currencyCode);
+        Boolean isLocal = true;
+
         if (rateIncreased == null) {
-            imageUrl = noChange;
+            imageUrl = noChangeImage;
         } else if (rateIncreased) {
-            imageUrl = Utils.getUrlGif(giphy.getRandomGifByTag(upTag));
+            try {
+                imageUrl = Utils.getUrlGif(giphy.getRandomGifByTag(upTag));
+                isLocal = false;
+            } catch (Exception e) {
+                log.warn(e.toString());
+                imageUrl = upImage;
+            }
+
         } else {
-            imageUrl = Utils.getUrlGif(giphy.getRandomGifByTag(downTag));
+            try {
+                imageUrl = Utils.getUrlGif(giphy.getRandomGifByTag(downTag));
+                isLocal = false;
+            } catch (Exception e) {
+                log.warn(e.toString());
+                imageUrl = downImage;
+            }
         }
-        InputStream in = new URL(imageUrl).openStream();
+
+        InputStream in;
+        if (isLocal) {
+            in = new FileInputStream(getClass().getClassLoader().getResource(imageUrl).getFile());
+        } else {
+            in = new URL(imageUrl).openStream();
+        }
         return IOUtils.toByteArray(in);
     }
 }
