@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -85,7 +87,8 @@ public class BaseController {
 
         InputStream in;
         if (isLocal) {
-            in = new FileInputStream(getClass().getClassLoader().getResource(imageUrl).getFile());
+            Resource resource = new ClassPathResource("./static/" + imageUrl);
+            in = resource.getInputStream();
         } else {
             in = new URL(imageUrl).openStream();
         }
